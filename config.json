@@ -1,0 +1,6 @@
+{
+    "name": "Release Defect Chart",
+    "sdk": "2.1",
+    "className": "TSReleaseDefectChart",
+    "story": "US427"
+}
