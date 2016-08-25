@@ -3,6 +3,7 @@ Ext.define('CA.techservices.calculator.DefectCalculator', {
     config: {
         closedStateValues: ['Closed'],
         allowedGroupValues: [],
+        groupField: 'Severity',
         /*
          * granularity: "month"|"year"|"day"|"quarter"
          */
@@ -26,7 +27,7 @@ Ext.define('CA.techservices.calculator.DefectCalculator', {
     },
 
     getMetrics: function() {
-        return [{
+        var metrics = [{
             'field': 'wasCreated',
             'as': 'Total Defects Opened',
             'f': 'sum',
@@ -37,73 +38,78 @@ Ext.define('CA.techservices.calculator.DefectCalculator', {
             'as': 'Total Defects Closed',
             'f': 'sum',
             'display': 'line'
-        },
-        {
-            'field': 'isOpen',
-            'as': 'Open',
-            'f': 'sum',
-            'display': 'column'
         }];
         
+        Ext.Array.each(this.allowedGroupValues, function(value){
+            var value_name = "None";
+            if ( !Ext.isEmpty(value) ) {
+                value_name = value.replace(/[^a-z0-9]+/g,"_");
+            }
+            metrics.push({
+                'field': 'isOpen'+value_name,
+                'as': value || "None",
+                'f': 'sum',
+                'display': 'column',
+                'stack': 1
+            });
+        });
+        
+        return metrics;
     },
     
     getDerivedFieldsOnInput: function() {
         var me = this;
-        return [
-            { 
-                as: 'wasCreated',
-                f : function(snapshot) {
-                    if ( me._matchesPriority(snapshot) ) { 
-
-                        return 1;
-                    }
-
-                    return 0;
+        
+        var derived_fields = [{ 
+            as: 'wasCreated',
+            f : function(snapshot) {
+                return 1;
+            }
+        },
+        {
+            as: 'isClosed',
+            f: function(snapshot) {
+                if ( Ext.Array.contains(me.closedStateValues, snapshot.State) ) {
+                    return 1;
                 }
-            },
-            {
-                as: 'isClosed',
-                f: function(snapshot) {
-                    if ( Ext.Array.contains(me.closedStateValues, snapshot.State) ) {
-                        if ( me._matchesPriority(snapshot) ) { 
-                            return 1;
-                        }
-                        return 0;
-                    }
-                    return 0;
-                }
-            },
-            {
-                as: 'isOpen',
+                return 0;
+            }
+        }];
+        
+        Ext.Array.each(this.allowedGroupValues, function(value){
+            var value_name = "None";
+            if ( !Ext.isEmpty(value) ) {
+                value_name = value.replace(/[^a-z0-9]+/g,"_");
+            }
+            
+            derived_fields.push({
+                as: 'isOpen'+value_name,
                 f: function(snapshot) {
                     if ( !Ext.Array.contains(me.closedStateValues, snapshot.State) ) {
-                        if ( me._matchesPriority(snapshot) ) { 
+                        if ( me._matchesValue(snapshot,value) ) { 
                             return 1;
                         }
                         return 0;
                     }
                     return 0;
                 }
-            }
-        ];
+            });
+        });
+        
+        return derived_fields;
     },
     
-    _matchesPriority: function(snapshot) {
+    _matchesValue: function(snapshot,value) {
         var me = this;
         
-        if ( Ext.isEmpty(me.allowedPriorities) || me.allowedPriorities.length === 0 ) {
-            return true;
-        }
-        
-        if ( Ext.Array.contains(me.allowedPriorities, snapshot.Priority) ) {
-            return true;
-        }
-        
         // when hydrated, lookback will return "None" for an empty field
-        if ( snapshot.Priority == 'None' && Ext.Array.contains(me.allowedPriorities, '') ) {
+       // console.log(this.groupField, snapshot[this.groupField], value);
+        
+        if ( snapshot[this.groupField] == 'None' && Ext.isEmpty(value)) {
             return true;
         }
-        return false;
+        
+        return (snapshot[this.groupField] == value);
     },
     
     // override to limit number of x points displayed
@@ -115,13 +121,13 @@ Ext.define('CA.techservices.calculator.DefectCalculator', {
         calculator.addSnapshots(snapshots, this._getStartDate(snapshots), this._getEndDate(snapshots));
 
         var chart_data = this._transformLumenizeDataToHighchartsSeries(calculator, seriesConfig);
-        console.log('chart_data', chart_data);
         
         var updated_chart_data = chart_data;
         
         //var updated_chart_data = this._addEvents(chart_data);
 
         //updated_chart_data = this._removeEarlyDates(updated_chart_data,this.timeboxCount);
+        //updated_chart_data = this._removeAfterToday(updated_chart_data);
 
         updated_chart_data = this._splitChartsIntoLeftAndRight(updated_chart_data);
                 
@@ -133,10 +139,10 @@ Ext.define('CA.techservices.calculator.DefectCalculator', {
         
         Ext.Array.each(series, function(s) {
             var zindex = 3;
-            yAxis = 1;
-            if ( s.name == "Open" ) { 
+            yAxis = 0;
+            if ( /Total/.test(s.name) ) { 
                 zindex = 2;
-                yAxis = 0;
+                yAxis = 1;
             }
             s.zIndex = zindex;
             s.yAxis = yAxis;

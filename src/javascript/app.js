@@ -10,10 +10,12 @@ Ext.define("TSReleaseDefectChart", {
 
     release: null,
     granularity: 'day',
+    all_values: [],
     
     config: {
         defaultSettings: {
-            closedStateValues: ['Closed']
+            closedStateValues: ['Closed'],
+            groupField: 'Severity'
         }
     },
     
@@ -22,7 +24,19 @@ Ext.define("TSReleaseDefectChart", {
     },
                         
     launch: function() {
-        this._addSelectors(this.down('#selector_box'));
+        this.group_field = this.getSetting('groupField') || 'Severity';
+        console.log("group_field:", this.group_field);
+        
+        TSUtilities.getAllowedValues('Defect',this.group_field).then({
+            scope: this,
+            success: function(values) {
+                this.all_values = values;
+                this._addSelectors(this.down('#selector_box'));
+            },
+            failure: function(msg){
+                Ext.Msg.alert("Issue Loading Values", msg);
+            }
+        });
         
     },
     
@@ -125,6 +139,9 @@ Ext.define("TSReleaseDefectChart", {
             calculatorType: 'CA.techservices.calculator.DefectCalculator',
             calculatorConfig: {
                 closedStateValues: closedStates,
+                
+                allowedGroupValues: this.all_values,
+                groupField: this.group_field,
                 granularity: this.granularity,
                 endDate: this.release.get('ReleaseDate'),
                 startDate: this.release.get('ReleaseStartDate')
@@ -142,8 +159,8 @@ Ext.define("TSReleaseDefectChart", {
                _TypeHierarchy: 'Defect' 
            },
            removeUnauthorizedSnapshots: true,
-           fetch: ['ObjectID','State','Severity','CreationDate'],
-           hydrate: ['State','Severity'],
+           fetch: ['ObjectID','State',this.group_field,'CreationDate'],
+           hydrate: ['State',this.group_field],
            sort: {
                '_ValidFrom': 1
            }
@@ -156,7 +173,7 @@ Ext.define("TSReleaseDefectChart", {
                 zoomType: 'xy'
             },
             title: {
-                text: 'Defects by Severity'
+                text: 'Defects by ' + this.group_field
             },
             xAxis: {
                 tickmarkPlacement: 'on',
@@ -191,7 +208,7 @@ Ext.define("TSReleaseDefectChart", {
                         enabled: false
                     }
                 },
-                area: {
+                column: {
                     stacking: 'normal'
                 }
             }
@@ -252,16 +269,37 @@ Ext.define("TSReleaseDefectChart", {
         return typeof(this.getAppId()) == 'undefined';
     },
     
+    _fieldIsNotHidden: function(field) {
+        if ( field.hidden ) { return false; }
+        //console.log( field.name, field);
+        if ( field.attributeDefinition && field.attributeDefinition.Constrained ) {
+            if ( field.attributeDefinition.SchemaType == "string" ) {
+                return true;
+            }
+        }
+        return false;
+    },
+    
     getSettingsFields: function() {
+        var me = this;
         var left_margin = 5;
         return [{
+            name: 'groupField',
+            xtype: 'rallyfieldcombobox',
+            model: 'Defect',
+            _isNotHidden: me._fieldIsNotHidden,
+            margin: left_margin,
+            fieldLabel: 'Group Field',
+            labelWidth: 150
+        },{
             name: 'closedStateValues',
             xtype: 'tsmultifieldvaluepicker',
             model: 'Defect',
             field: 'State',
             margin: left_margin,
             fieldLabel: 'States to Consider Closed',
-            labelWidth: 150
+            labelWidth: 150,
+            readyState: 'ready'
         }];
     }
     
