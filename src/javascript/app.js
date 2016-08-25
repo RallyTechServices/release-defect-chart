@@ -25,7 +25,11 @@ Ext.define("TSReleaseDefectChart", {
                         
     launch: function() {
         this.group_field = this.getSetting('groupField') || 'Severity';
-        console.log("group_field:", this.group_field);
+        this.colors = this.getSetting('colorMapping') || {};
+
+        if ( Ext.isString(this.colors) ) {
+            this.colors = Ext.JSON.decode(this.colors);
+        }
         
         TSUtilities.getAllowedValues('Defect',this.group_field).then({
             scope: this,
@@ -144,7 +148,8 @@ Ext.define("TSReleaseDefectChart", {
                 groupField: this.group_field,
                 granularity: this.granularity,
                 endDate: this.release.get('ReleaseDate'),
-                startDate: this.release.get('ReleaseStartDate')
+                startDate: this.release.get('ReleaseStartDate'),
+                colors: this.colors
             },
             
             chartConfig: this._getChartConfig()
@@ -284,14 +289,6 @@ Ext.define("TSReleaseDefectChart", {
         var me = this;
         var left_margin = 5;
         return [{
-            name: 'groupField',
-            xtype: 'rallyfieldcombobox',
-            model: 'Defect',
-            _isNotHidden: me._fieldIsNotHidden,
-            margin: left_margin,
-            fieldLabel: 'Group Field',
-            labelWidth: 150
-        },{
             name: 'closedStateValues',
             xtype: 'tsmultifieldvaluepicker',
             model: 'Defect',
@@ -300,6 +297,41 @@ Ext.define("TSReleaseDefectChart", {
             fieldLabel: 'States to Consider Closed',
             labelWidth: 150,
             readyState: 'ready'
+        },{
+            name: 'groupField',
+            xtype: 'rallyfieldcombobox',
+            model: 'Defect',
+            _isNotHidden: me._fieldIsNotHidden,
+            margin: left_margin,
+            fieldLabel: 'Group Field',
+            labelWidth: 150,
+            bubbleEvents: ['fieldselected', 'fieldready'],
+            listeners: {
+                change: function(cb) {
+                    this.fireEvent('fieldselected',cb.getValue());
+                }
+            }
+        },{
+            name: 'colorMapping',
+            readyEvent: 'ready',
+            fieldLabel: 'Colors by Field Value',
+            width: this.getWidth() -10,
+            margin: 0,
+            height: 175,
+            field: 'Severity',
+            model: 'Defect',
+            xtype: 'colorsettingsfield',
+            handlesEvents: {
+                fieldselected: function(field) {
+                    this.refreshWithNewField(field);
+                }
+            },
+            listeners: {
+                ready: function() {
+                    this.fireEvent('colorsettingsready');
+                }
+            },
+            bubbleEvents: 'colorsettingsready'
         }];
     }
     

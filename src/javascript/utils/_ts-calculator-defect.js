@@ -14,7 +14,15 @@ Ext.define('CA.techservices.calculator.DefectCalculator', {
          * (null to display whatever data is available)
          */
         
-        timeboxCount: null
+        timeboxCount: null,
+        /*
+         * colors looks like:
+         * { 
+         *   <fieldValue1>: { color_mapping: "<color>" },
+         *   <fieldValue2>: { color_mappnig: "<color>" }
+         *  }
+         */
+        colors: {}
     },
     
     constructor: function(config) {
@@ -121,8 +129,8 @@ Ext.define('CA.techservices.calculator.DefectCalculator', {
         calculator.addSnapshots(snapshots, this._getStartDate(snapshots), this._getEndDate(snapshots));
 
         var chart_data = this._transformLumenizeDataToHighchartsSeries(calculator, seriesConfig);
-        
-        var updated_chart_data = chart_data;
+                
+        var updated_chart_data = this._addColors(chart_data);
         
         //var updated_chart_data = this._addEvents(chart_data);
 
@@ -138,7 +146,7 @@ Ext.define('CA.techservices.calculator.DefectCalculator', {
         var series = data.series;
         
         Ext.Array.each(series, function(s) {
-            var zindex = 3;
+            var zindex = 1;
             yAxis = 0;
             if ( /Total/.test(s.name) ) { 
                 zindex = 2;
@@ -151,9 +159,26 @@ Ext.define('CA.techservices.calculator.DefectCalculator', {
         return data;
     },
     
+    _addColors: function(data){
+        var me = this,
+            series = data.series;
+                
+        Ext.Array.each(series, function(s) {
+            var name = s.name;
+            var map = me.colors[name];
+           
+            if ( !Ext.isEmpty(me.colors[name]) && !Ext.isEmpty(me.colors[name]['color_mapping'])) {
+                var color = me.colors[name]['color_mapping'];
+                s.color = color;
+            }
+        });
+        
+        return data;
+    },
+    
     _addEvents: function(data){
         var series = data.series;
-        
+                
         Ext.Array.each(series, function(s) {
             s.data = Ext.Array.map(s.data, function(datum){
                 return {
