@@ -82,6 +82,17 @@ Ext.define("TSReleaseDefectChart", {
                 scope: this
             }
         });
+        
+        container.add({xtype:'container',flex:1});
+        
+        container.add({
+            xtype: 'rallybutton',
+            iconCls: 'icon-export secondary rly-small',
+            listeners: {
+                click: this._export,
+                scope: this
+            }
+        });
     },
     
     _updateData: function() {
@@ -164,7 +175,7 @@ Ext.define("TSReleaseDefectChart", {
                _TypeHierarchy: 'Defect' 
            },
            removeUnauthorizedSnapshots: true,
-           fetch: ['ObjectID','State',this.group_field,'CreationDate'],
+           fetch: ['ObjectID','State','FormattedID',this.group_field,'CreationDate'],
            hydrate: ['State',this.group_field],
            sort: {
                '_ValidFrom': 1
@@ -333,6 +344,32 @@ Ext.define("TSReleaseDefectChart", {
             },
             bubbleEvents: 'colorsettingsready'
         }];
+    },
+    
+    _export: function(){
+        var me = this,
+            chart = this.down('rallychart'),
+            snapshots = chart && chart.calculator && chart.calculator.snapshots,
+            chartEndDate = chart.calculator.endDate,
+            chartStartDate = chart.calculator.startDate;
+        this.logger.log('_Export', chart.calculator ,chartStartDate, chartEndDate);
+        if (snapshots){
+            var csv = [];
+            var headers = ['FormattedID',me.group_field,'State','_ValidFrom','_ValidTo'];
+            csv.push(headers.join(','));
+            Ext.Array.each(snapshots, function(s){
+                var validFrom = Rally.util.DateTime.fromIsoString(s._ValidFrom),
+                    validTo = Rally.util.DateTime.fromIsoString(s._ValidTo);
+
+                if (validFrom < chartEndDate && validTo >= chartStartDate){
+                    var row = [s.FormattedID, s[me.group_field], s.State, s._ValidFrom, s._ValidTo];
+                    csv.push(row.join(','));
+                }
+            });
+            csv = csv.join("\r\n");
+
+            CArABU.technicalservices.Exporter.saveCSVToFile(csv, Ext.String.format('export-{0}.csv', Rally.util.DateTime.format(new Date(), 'Y-m-d')));
+        }
     }
     
 });

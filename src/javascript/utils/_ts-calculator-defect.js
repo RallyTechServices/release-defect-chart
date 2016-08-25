@@ -128,6 +128,10 @@ Ext.define('CA.techservices.calculator.DefectCalculator', {
         var calculator = this.prepareCalculator(calculatorConfig);
         calculator.addSnapshots(snapshots, this._getStartDate(snapshots), this._getEndDate(snapshots));
 
+        this.snapshots = snapshots;
+        
+        console.log('snapshots', snapshots);
+        
         var chart_data = this._transformLumenizeDataToHighchartsSeries(calculator, seriesConfig);
                 
         var updated_chart_data = this._addColors(chart_data);
