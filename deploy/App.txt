@@ -3,13 +3,13 @@
 <head>
     <title>Release Defect Chart</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Wed Aug 24 2016 21:05:25 GMT-0700 (PDT) -->
+    <!--  Build Date: Wed Aug 24 2016 21:09:28 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Wed Aug 24 2016 21:05:25 GMT-0700 (PDT)";
+        var APP_BUILD_DATE = "Wed Aug 24 2016 21:09:28 GMT-0700 (PDT)";
         var STORY    = "US427";
         var BUILDER  = "jmartin";
-        var CHECKSUM = 114811490677;
+        var CHECKSUM = 116931524275;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -2253,10 +2253,18 @@ Ext.define("TSReleaseDefectChart", {
         container.add({
             xtype: 'rallybutton',
             iconCls: 'icon-export secondary rly-small',
+            margin: 10,
             listeners: {
                 click: this._export,
                 scope: this
             }
+        });
+        
+        container.add({
+            xtype: 'container',
+            itemId: 'etlDate',
+            padding: 10,
+            tpl: '<tpl><div class="etlDate">Data current as of {etlDate}</div></tpl>'
         });
     },
     
@@ -2344,6 +2352,11 @@ Ext.define("TSReleaseDefectChart", {
            hydrate: ['State',this.group_field],
            sort: {
                '_ValidFrom': 1
+           },
+           limit: Infinity,
+           listeners: {
+               load: this._updateETLDate,
+               scope: this
            }
         };
     },
@@ -2509,6 +2522,14 @@ Ext.define("TSReleaseDefectChart", {
             },
             bubbleEvents: 'colorsettingsready'
         }];
+    },
+    
+    _updateETLDate: function(store, records, success){
+        this.logger.log('_updateETLDate', store, records, success);
+        var etlDate = store && store.proxy && store.proxy._etlDate;
+        if (etlDate){
+            this.down('#etlDate').update({etlDate: Rally.util.DateTime.fromIsoString(etlDate)});
+        }
     },
     
     _export: function(){

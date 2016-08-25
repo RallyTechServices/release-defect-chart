@@ -88,10 +88,18 @@ Ext.define("TSReleaseDefectChart", {
         container.add({
             xtype: 'rallybutton',
             iconCls: 'icon-export secondary rly-small',
+            margin: 10,
             listeners: {
                 click: this._export,
                 scope: this
             }
+        });
+        
+        container.add({
+            xtype: 'container',
+            itemId: 'etlDate',
+            padding: 10,
+            tpl: '<tpl><div class="etlDate">Data current as of {etlDate}</div></tpl>'
         });
     },
     
@@ -179,6 +187,11 @@ Ext.define("TSReleaseDefectChart", {
            hydrate: ['State',this.group_field],
            sort: {
                '_ValidFrom': 1
+           },
+           limit: Infinity,
+           listeners: {
+               load: this._updateETLDate,
+               scope: this
            }
         };
     },
@@ -344,6 +357,14 @@ Ext.define("TSReleaseDefectChart", {
             },
             bubbleEvents: 'colorsettingsready'
         }];
+    },
+    
+    _updateETLDate: function(store, records, success){
+        this.logger.log('_updateETLDate', store, records, success);
+        var etlDate = store && store.proxy && store.proxy._etlDate;
+        if (etlDate){
+            this.down('#etlDate').update({etlDate: Rally.util.DateTime.fromIsoString(etlDate)});
+        }
     },
     
     _export: function(){
