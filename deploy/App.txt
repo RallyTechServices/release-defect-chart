@@ -3,13 +3,13 @@
 <head>
     <title>Release Defect Chart</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Wed Aug 24 2016 20:22:30 GMT-0700 (PDT) -->
+    <!--  Build Date: Wed Aug 24 2016 20:51:44 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Wed Aug 24 2016 20:22:30 GMT-0700 (PDT)";
+        var APP_BUILD_DATE = "Wed Aug 24 2016 20:51:44 GMT-0700 (PDT)";
         var STORY    = "US427";
         var BUILDER  = "jmartin";
-        var CHECKSUM = 97657665619;
+        var CHECKSUM = 101281296254;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -636,7 +636,7 @@ Ext.define('CA.techservices.calculator.DefectCalculator', {
         //var updated_chart_data = this._addEvents(chart_data);
 
         //updated_chart_data = this._removeEarlyDates(updated_chart_data,this.timeboxCount);
-        //updated_chart_data = this._removeAfterToday(updated_chart_data);
+        updated_chart_data = this._removeAfterToday(updated_chart_data);
 
         updated_chart_data = this._splitChartsIntoLeftAndRight(updated_chart_data);
                 
@@ -723,6 +723,48 @@ Ext.define('CA.techservices.calculator.DefectCalculator', {
         
         return { 
             categories: categories, 
+            series: series_group 
+        };
+            
+    },
+    
+    _getQuarterStringFor: function(jsdate) {
+        var month = jsdate.getMonth();
+        var quarter = parseInt(month/3) + 1;
+        
+        return Ext.util.Format.date(jsdate,'Y') + "Q" + quarter;
+    },
+    
+    _removeAfterToday: function(chart_data) {
+        var today = new Date();
+        
+        var today_string = Rally.util.DateTime.toIsoString(today).replace(/T.*$/,'');
+        if ( this.granularity == 'quarter' ) {
+            today_string = this._getQuarterStringFor(today);
+        }
+        console.log("Today:", today_string);
+        var full_categories = Ext.Array.filter(chart_data.categories, function(category){
+            return ( category <= today_string );
+        });
+        
+        var length = full_categories.length;
+
+        var series_group = Ext.Array.map(chart_data.series, function(series) {
+            var data = [];
+            Ext.Array.each(series.data, function(datum,index){
+                if ( index >= length ) {
+                    datum = null;
+                }
+                data.push(datum);
+            });
+           
+            // this format is to prevent the series from being modified:
+            return Ext.Object.merge( {}, series, { data: data } );
+        });
+        
+        
+        return { 
+            categories: chart_data.categories, 
             series: series_group 
         };
             
@@ -888,7 +930,6 @@ Ext.define('Rally.techservices.ColorSettingsField', {
             callback: function(records, operation, success) {
                 var data = Ext.Array.map(records, this._recordToGridRow, this);
                 
-                console.log('data', data);
                 this._store.loadRawData(data);
                 
                 this.fireEvent('ready');
@@ -914,7 +955,6 @@ Ext.define('Rally.techservices.ColorSettingsField', {
         };
         
         if (pref) {
-            console.log('pref', pref);
             if ( Ext.isString(pref) ) {
                 column.color_mapping = pref;
             } else {

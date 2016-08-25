@@ -157,7 +157,6 @@ Ext.define('Rally.techservices.ColorSettingsField', {
             callback: function(records, operation, success) {
                 var data = Ext.Array.map(records, this._recordToGridRow, this);
                 
-                console.log('data', data);
                 this._store.loadRawData(data);
                 
                 this.fireEvent('ready');
@@ -183,7 +182,6 @@ Ext.define('Rally.techservices.ColorSettingsField', {
         };
         
         if (pref) {
-            console.log('pref', pref);
             if ( Ext.isString(pref) ) {
                 column.color_mapping = pref;
             } else {
