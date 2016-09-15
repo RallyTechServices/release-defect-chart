@@ -3,13 +3,13 @@
 <head>
     <title>Release Defect Chart</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Wed Sep 14 2016 17:31:48 GMT-0700 (PDT) -->
+    <!--  Build Date: Wed Sep 14 2016 17:49:37 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Wed Sep 14 2016 17:31:48 GMT-0700 (PDT)";
+        var APP_BUILD_DATE = "Wed Sep 14 2016 17:49:37 GMT-0700 (PDT)";
         var STORY    = "US427";
         var BUILDER  = "jmartin";
-        var CHECKSUM = 118072455283;
+        var CHECKSUM = 118488316174;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -881,6 +881,7 @@ Ext.define('Rally.techservices.ColorSettingsField', {
     getSubmitData: function() {
         var data = {};
         data[this.name] = Ext.JSON.encode( this._buildSettingValue() );
+
         return data;
     },
 
@@ -891,6 +892,9 @@ Ext.define('Rally.techservices.ColorSettingsField', {
                 'color_mapping': record.get('color_mapping')
             };
         }, this);
+        if ( Ext.isEmpty(columns['None']) && !Ext.isEmpty(columns['']) ) {
+            columns['None'] = columns[''];
+        }
         return columns;
     },
 

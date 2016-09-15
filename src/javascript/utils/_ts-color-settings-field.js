@@ -102,6 +102,7 @@ Ext.define('Rally.techservices.ColorSettingsField', {
     getSubmitData: function() {
         var data = {};
         data[this.name] = Ext.JSON.encode( this._buildSettingValue() );
+
         return data;
     },
 
@@ -112,6 +113,9 @@ Ext.define('Rally.techservices.ColorSettingsField', {
                 'color_mapping': record.get('color_mapping')
             };
         }, this);
+        if ( Ext.isEmpty(columns['None']) && !Ext.isEmpty(columns['']) ) {
+            columns['None'] = columns[''];
+        }
         return columns;
     },
 
