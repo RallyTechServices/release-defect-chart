@@ -3,13 +3,13 @@
 <head>
     <title>Release Defect Chart</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Wed Aug 24 2016 21:09:28 GMT-0700 (PDT) -->
+    <!--  Build Date: Wed Sep 14 2016 17:31:48 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Wed Aug 24 2016 21:09:28 GMT-0700 (PDT)";
+        var APP_BUILD_DATE = "Wed Sep 14 2016 17:31:48 GMT-0700 (PDT)";
         var STORY    = "US427";
         var BUILDER  = "jmartin";
-        var CHECKSUM = 116931524275;
+        var CHECKSUM = 118072455283;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -552,7 +552,7 @@ Ext.define('CA.techservices.calculator.DefectCalculator', {
         Ext.Array.each(this.allowedGroupValues, function(value){
             var value_name = "None";
             if ( !Ext.isEmpty(value) ) {
-                value_name = value.replace(/[^a-z0-9]+/g,"_");
+                value_name = value.replace(/[^a-zA-Z0-9]+/g,"_");
             }
             metrics.push({
                 'field': 'isOpen'+value_name,
@@ -588,9 +588,9 @@ Ext.define('CA.techservices.calculator.DefectCalculator', {
         Ext.Array.each(this.allowedGroupValues, function(value){
             var value_name = "None";
             if ( !Ext.isEmpty(value) ) {
-                value_name = value.replace(/[^a-z0-9]+/g,"_");
+                value_name = value.replace(/[^a-zA-Z0-9]+/g,"_");
             }
-            
+
             derived_fields.push({
                 as: 'isOpen'+value_name,
                 f: function(snapshot) {
@@ -613,12 +613,14 @@ Ext.define('CA.techservices.calculator.DefectCalculator', {
         
         // when hydrated, lookback will return "None" for an empty field
        // console.log(this.groupField, snapshot[this.groupField], value);
-        
-        if ( snapshot[this.groupField] == 'None' && Ext.isEmpty(value)) {
-            return true;
+        var result = false;
+        if ( ( snapshot[this.groupField] == 'None' || ! snapshot[this.groupField] ) && Ext.isEmpty(value)) {
+            result = true;
+        } else if (snapshot[this.groupField] == value) {
+            result = true;
         }
         
-        return (snapshot[this.groupField] == value);
+        return result;
     },
     
     // override to limit number of x points displayed
@@ -1581,9 +1583,11 @@ Ext.define('CA.techservices.picker.FieldValuePicker', {
         this._initFiltering();
         this._groupRecords(this._getRecordValue());
 
-        if (this.originalValue) {
+        if (this.originalValue && !this.__loaded) {
             this.setValue(this.originalValue);
         }
+        
+        this.__loaded = true;
 
         if (this.list) {
             this.list.refresh();
@@ -1733,6 +1737,7 @@ Ext.define('CA.techservices.picker.FieldValuePicker', {
         }
     },
 
+    
     _onInitialExpand: function(field) {
         if (field.inputEl) {
             field.mon(field.inputEl, 'click', function() {
@@ -1862,7 +1867,7 @@ Ext.define('CA.techservices.picker.FieldValuePicker', {
             this.resetFilters();
             this.store.clearGrouping();
             this.store.requester = this;
-
+//
             if (this.store.getCount() < 1) {
                 loadPromise = this.store.load(this.storeLoadOptions);
             } else {
@@ -2189,6 +2194,8 @@ Ext.define("TSReleaseDefectChart", {
     },
                         
     launch: function() {
+        console.log('--', this.getSettings());
+        
         this.group_field = this.getSetting('groupField') || 'Severity';
         this.colors = this.getSetting('colorMapping') || {};
 
@@ -2319,6 +2326,9 @@ Ext.define("TSReleaseDefectChart", {
         var closedStates = this.getSetting('closedStateValues') || [];
         if ( !Ext.isArray(closedStates) ) { closedStates = closedStates.split(/,/); }
         
+        this.logger.log("Closed States:", closedStates);
+        this.logger.log("Group Values", this.all_values);
+        
         container.add({
             xtype: 'rallychart',
             storeType: 'Rally.data.lookback.SnapshotStore',
@@ -2327,7 +2337,6 @@ Ext.define("TSReleaseDefectChart", {
             calculatorType: 'CA.techservices.calculator.DefectCalculator',
             calculatorConfig: {
                 closedStateValues: closedStates,
-                
                 allowedGroupValues: this.all_values,
                 groupField: this.group_field,
                 granularity: this.granularity,

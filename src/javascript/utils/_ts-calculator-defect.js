@@ -51,7 +51,7 @@ Ext.define('CA.techservices.calculator.DefectCalculator', {
         Ext.Array.each(this.allowedGroupValues, function(value){
             var value_name = "None";
             if ( !Ext.isEmpty(value) ) {
-                value_name = value.replace(/[^a-z0-9]+/g,"_");
+                value_name = value.replace(/[^a-zA-Z0-9]+/g,"_");
             }
             metrics.push({
                 'field': 'isOpen'+value_name,
@@ -87,9 +87,9 @@ Ext.define('CA.techservices.calculator.DefectCalculator', {
         Ext.Array.each(this.allowedGroupValues, function(value){
             var value_name = "None";
             if ( !Ext.isEmpty(value) ) {
-                value_name = value.replace(/[^a-z0-9]+/g,"_");
+                value_name = value.replace(/[^a-zA-Z0-9]+/g,"_");
             }
-            
+
             derived_fields.push({
                 as: 'isOpen'+value_name,
                 f: function(snapshot) {
@@ -112,12 +112,14 @@ Ext.define('CA.techservices.calculator.DefectCalculator', {
         
         // when hydrated, lookback will return "None" for an empty field
        // console.log(this.groupField, snapshot[this.groupField], value);
-        
-        if ( snapshot[this.groupField] == 'None' && Ext.isEmpty(value)) {
-            return true;
+        var result = false;
+        if ( ( snapshot[this.groupField] == 'None' || ! snapshot[this.groupField] ) && Ext.isEmpty(value)) {
+            result = true;
+        } else if (snapshot[this.groupField] == value) {
+            result = true;
         }
         
-        return (snapshot[this.groupField] == value);
+        return result;
     },
     
     // override to limit number of x points displayed

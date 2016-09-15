@@ -525,9 +525,11 @@ Ext.define('CA.techservices.picker.FieldValuePicker', {
         this._initFiltering();
         this._groupRecords(this._getRecordValue());
 
-        if (this.originalValue) {
+        if (this.originalValue && !this.__loaded) {
             this.setValue(this.originalValue);
         }
+        
+        this.__loaded = true;
 
         if (this.list) {
             this.list.refresh();
@@ -677,6 +679,7 @@ Ext.define('CA.techservices.picker.FieldValuePicker', {
         }
     },
 
+    
     _onInitialExpand: function(field) {
         if (field.inputEl) {
             field.mon(field.inputEl, 'click', function() {
@@ -806,7 +809,7 @@ Ext.define('CA.techservices.picker.FieldValuePicker', {
             this.resetFilters();
             this.store.clearGrouping();
             this.store.requester = this;
-
+//
             if (this.store.getCount() < 1) {
                 loadPromise = this.store.load(this.storeLoadOptions);
             } else {

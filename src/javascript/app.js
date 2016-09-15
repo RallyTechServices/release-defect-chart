@@ -24,6 +24,8 @@ Ext.define("TSReleaseDefectChart", {
     },
                         
     launch: function() {
+        console.log('--', this.getSettings());
+        
         this.group_field = this.getSetting('groupField') || 'Severity';
         this.colors = this.getSetting('colorMapping') || {};
 
@@ -154,6 +156,9 @@ Ext.define("TSReleaseDefectChart", {
         var closedStates = this.getSetting('closedStateValues') || [];
         if ( !Ext.isArray(closedStates) ) { closedStates = closedStates.split(/,/); }
         
+        this.logger.log("Closed States:", closedStates);
+        this.logger.log("Group Values", this.all_values);
+        
         container.add({
             xtype: 'rallychart',
             storeType: 'Rally.data.lookback.SnapshotStore',
@@ -162,7 +167,6 @@ Ext.define("TSReleaseDefectChart", {
             calculatorType: 'CA.techservices.calculator.DefectCalculator',
             calculatorConfig: {
                 closedStateValues: closedStates,
-                
                 allowedGroupValues: this.all_values,
                 groupField: this.group_field,
                 granularity: this.granularity,
