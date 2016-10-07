@@ -3,13 +3,13 @@
 <head>
     <title>Release Defect Chart</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Wed Sep 14 2016 17:49:37 GMT-0700 (PDT) -->
+    <!--  Build Date: Fri Oct 07 2016 15:19:15 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Wed Sep 14 2016 17:49:37 GMT-0700 (PDT)";
+        var APP_BUILD_DATE = "Fri Oct 07 2016 15:19:15 GMT-0700 (PDT)";
         var STORY    = "US427";
         var BUILDER  = "jmartin";
-        var CHECKSUM = 118488316174;
+        var CHECKSUM = 119753096202;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -519,8 +519,8 @@ Ext.define('CA.techservices.calculator.DefectCalculator', {
         /*
          * colors looks like:
          * { 
-         *   <fieldValue1>: { color_mapping: "<color>" },
-         *   <fieldValue2>: { color_mappnig: "<color>" }
+         *   "High": "blue",
+         *   "Pretty Low": "#00f"
          *  }
          */
         colors: {}
@@ -674,8 +674,8 @@ Ext.define('CA.techservices.calculator.DefectCalculator', {
             var name = s.name;
             var map = me.colors[name];
            
-            if ( !Ext.isEmpty(me.colors[name]) && !Ext.isEmpty(me.colors[name]['color_mapping'])) {
-                var color = me.colors[name]['color_mapping'];
+            if ( !Ext.isEmpty(me.colors[name]) ) {
+                var color = me.colors[name];
                 s.color = color;
             }
         });
@@ -814,7 +814,7 @@ Ext.define('Rally.techservices.ColorSettingsField', {
         this.callParent(arguments);
 
         this._store = Ext.create('Ext.data.Store', {
-            fields: ['field_value', 'color_mapping'],
+            fields: ['field_value', 'color_mapping','field_name'],
             data: []
         });
 
@@ -886,24 +886,29 @@ Ext.define('Rally.techservices.ColorSettingsField', {
     },
 
     _buildSettingValue: function() {
-        var columns = {};
+        var colors = {};
+        var settings = this._value || {};
+        if ( Ext.isString(settings) ) { 
+            settings = Ext.JSON.decode(settings);
+        }
+        
+        var has_changed_value = false;
         this._store.each(function(record) {
-            columns[record.get('field_value')] = {
-                'color_mapping': record.get('color_mapping')
-            };
+            
+            if ( record.get('field_name') == this.field ) {
+                has_changed_value = true;
+                colors[record.get('field_value')] = record.get('color_mapping');
+            }
         }, this);
-        if ( Ext.isEmpty(columns['None']) && !Ext.isEmpty(columns['']) ) {
-            columns['None'] = columns[''];
+        
+        if ( Ext.isEmpty(colors['None']) && !Ext.isEmpty(colors['']) ) {
+            colors['None'] = colors[''];
         }
-        return columns;
-    },
-
-    getErrors: function() {
-        var errors = [];
-        if (this._storeLoaded && !Ext.Object.getSize(this._buildSettingValue())) {
-            errors.push('At least one column must be shown.');
+        
+        if ( has_changed_value ) {
+            settings[this.field] = colors;
         }
-        return errors;
+        return settings;
     },
 
     setValue: function(value) {
@@ -911,8 +916,9 @@ Ext.define('Rally.techservices.ColorSettingsField', {
         this._value = value;
     },
 
-    _getColumnValue: function(columnName) {
+    _getColumnValue: function(column_name) {
         var value = this._value;
+        var field_name = this.field;
 
         if ( Ext.isEmpty(value) ) {
             return null;
@@ -922,20 +928,28 @@ Ext.define('Rally.techservices.ColorSettingsField', {
             value = Ext.JSON.decode(value);
         }
         
-        if ( Ext.isString(value)[columnName] ) {
-            return Ext.JSON.decode(value)[columnName];
+        if ( Ext.isEmpty(value[field_name])) {
+            // no settings for this particular grouping field
+            return null;
         }
-
-        return value[columnName];
+        
+        if ( Ext.isEmpty(value[field_name][column_name]) ) {
+            // has settings for this grouping field, but not for this value
+            return null;
+        }
+        return value[field_name][column_name];
     },
 
     refreshWithNewField: function(field) {
+        this._value = this._buildSettingValue();
+
         delete this._storeLoaded;
         if ( Ext.isString(field) ) {
             this.field = field;
             this._getColorField();
             return;
         }
+        
         field.getAllowedValueStore().load({
             callback: function(records, operation, success) {
                 var data = Ext.Array.map(records, this._recordToGridRow, this);
@@ -951,6 +965,8 @@ Ext.define('Rally.techservices.ColorSettingsField', {
 
     _recordToGridRow: function(allowedValue) {
         var field_value = "";
+        var field_name = this.field;
+        
         if ( Ext.isFunction(allowedValue.get)) {
             field_value = allowedValue.get('StringValue');
         } else {
@@ -961,19 +977,15 @@ Ext.define('Rally.techservices.ColorSettingsField', {
 
         var column = { 
             field_value: field_value,
-            color_mapping: ''
+            color_mapping: '',
+            field_name: field_name
         };
         
         if (pref) {
-            if ( Ext.isString(pref) ) {
-                column.color_mapping = pref;
-            } else {
-                column.color_mapping = pref.color_mapping;
-            }
+            column.color_mapping = pref;
         }
 
         return column;
-
     }
 });
 Ext.define('CArABU.technicalservices.Exporter',{
@@ -2189,8 +2201,10 @@ Ext.define("TSReleaseDefectChart", {
     config: {
         defaultSettings: {
             closedStateValues: ['Closed'],
-            groupField: 'Severity'
+            groupField: 'Severity',
+            colorMappingByGroup: {}
         }
+    
     },
     
     integrationHeaders : {
@@ -2201,11 +2215,13 @@ Ext.define("TSReleaseDefectChart", {
         console.log('--', this.getSettings());
         
         this.group_field = this.getSetting('groupField') || 'Severity';
-        this.colors = this.getSetting('colorMapping') || {};
+        this.colors_by_field = this.getSetting('colorMappingByGroup') || {};
 
-        if ( Ext.isString(this.colors) ) {
-            this.colors = Ext.JSON.decode(this.colors);
+        if ( Ext.isString(this.colors_by_field) ) {
+            this.colors_by_field = Ext.JSON.decode(this.colors_by_field);
         }
+        
+        this.colors = this.colors_by_field[this.group_field] || {};
         
         TSUtilities.getAllowedValues('Defect',this.group_field).then({
             scope: this,
@@ -2514,7 +2530,7 @@ Ext.define("TSReleaseDefectChart", {
                 }
             }
         },{
-            name: 'colorMapping',
+            name: 'colorMappingByGroup',
             readyEvent: 'ready',
             fieldLabel: 'Colors by Field Value',
             width: this.getWidth() -10,

@@ -2,7 +2,15 @@
 
 Given a chosen release, display daily counts and trend of defects that are either directly associated with the release or associated via their parent stories.  
 
+![Chart](./images/chart.png)
+
 An admin can choose a field to use as the group-by field for the bars.
+
+If the admin changes the field used for grouping, the colors for that field should not be lost.  That is,
+if she chooses colors for the the valid values of Severity, then changes to Priority, the Severity settings
+will be saved and available for when she changes the field back to Severity.
+
+![Settings](./images/chart_settings.png)
 
 
 ## Development Notes

@@ -18,8 +18,8 @@ Ext.define('CA.techservices.calculator.DefectCalculator', {
         /*
          * colors looks like:
          * { 
-         *   <fieldValue1>: { color_mapping: "<color>" },
-         *   <fieldValue2>: { color_mappnig: "<color>" }
+         *   "High": "blue",
+         *   "Pretty Low": "#00f"
          *  }
          */
         colors: {}
@@ -173,8 +173,8 @@ Ext.define('CA.techservices.calculator.DefectCalculator', {
             var name = s.name;
             var map = me.colors[name];
            
-            if ( !Ext.isEmpty(me.colors[name]) && !Ext.isEmpty(me.colors[name]['color_mapping'])) {
-                var color = me.colors[name]['color_mapping'];
+            if ( !Ext.isEmpty(me.colors[name]) ) {
+                var color = me.colors[name];
                 s.color = color;
             }
         });

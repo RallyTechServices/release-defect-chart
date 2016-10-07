@@ -35,7 +35,7 @@ Ext.define('Rally.techservices.ColorSettingsField', {
         this.callParent(arguments);
 
         this._store = Ext.create('Ext.data.Store', {
-            fields: ['field_value', 'color_mapping'],
+            fields: ['field_value', 'color_mapping','field_name'],
             data: []
         });
 
@@ -107,24 +107,29 @@ Ext.define('Rally.techservices.ColorSettingsField', {
     },
 
     _buildSettingValue: function() {
-        var columns = {};
+        var colors = {};
+        var settings = this._value || {};
+        if ( Ext.isString(settings) ) { 
+            settings = Ext.JSON.decode(settings);
+        }
+        
+        var has_changed_value = false;
         this._store.each(function(record) {
-            columns[record.get('field_value')] = {
-                'color_mapping': record.get('color_mapping')
-            };
+            
+            if ( record.get('field_name') == this.field ) {
+                has_changed_value = true;
+                colors[record.get('field_value')] = record.get('color_mapping');
+            }
         }, this);
-        if ( Ext.isEmpty(columns['None']) && !Ext.isEmpty(columns['']) ) {
-            columns['None'] = columns[''];
+        
+        if ( Ext.isEmpty(colors['None']) && !Ext.isEmpty(colors['']) ) {
+            colors['None'] = colors[''];
         }
-        return columns;
-    },
-
-    getErrors: function() {
-        var errors = [];
-        if (this._storeLoaded && !Ext.Object.getSize(this._buildSettingValue())) {
-            errors.push('At least one column must be shown.');
+        
+        if ( has_changed_value ) {
+            settings[this.field] = colors;
         }
-        return errors;
+        return settings;
     },
 
     setValue: function(value) {
@@ -132,8 +137,9 @@ Ext.define('Rally.techservices.ColorSettingsField', {
         this._value = value;
     },
 
-    _getColumnValue: function(columnName) {
+    _getColumnValue: function(column_name) {
         var value = this._value;
+        var field_name = this.field;
 
         if ( Ext.isEmpty(value) ) {
             return null;
@@ -143,20 +149,28 @@ Ext.define('Rally.techservices.ColorSettingsField', {
             value = Ext.JSON.decode(value);
         }
         
-        if ( Ext.isString(value)[columnName] ) {
-            return Ext.JSON.decode(value)[columnName];
+        if ( Ext.isEmpty(value[field_name])) {
+            // no settings for this particular grouping field
+            return null;
         }
-
-        return value[columnName];
+        
+        if ( Ext.isEmpty(value[field_name][column_name]) ) {
+            // has settings for this grouping field, but not for this value
+            return null;
+        }
+        return value[field_name][column_name];
     },
 
     refreshWithNewField: function(field) {
+        this._value = this._buildSettingValue();
+
         delete this._storeLoaded;
         if ( Ext.isString(field) ) {
             this.field = field;
             this._getColorField();
             return;
         }
+        
         field.getAllowedValueStore().load({
             callback: function(records, operation, success) {
                 var data = Ext.Array.map(records, this._recordToGridRow, this);
@@ -172,6 +186,8 @@ Ext.define('Rally.techservices.ColorSettingsField', {
 
     _recordToGridRow: function(allowedValue) {
         var field_value = "";
+        var field_name = this.field;
+        
         if ( Ext.isFunction(allowedValue.get)) {
             field_value = allowedValue.get('StringValue');
         } else {
@@ -182,18 +198,14 @@ Ext.define('Rally.techservices.ColorSettingsField', {
 
         var column = { 
             field_value: field_value,
-            color_mapping: ''
+            color_mapping: '',
+            field_name: field_name
         };
         
         if (pref) {
-            if ( Ext.isString(pref) ) {
-                column.color_mapping = pref;
-            } else {
-                column.color_mapping = pref.color_mapping;
-            }
+            column.color_mapping = pref;
         }
 
         return column;
-
     }
 });

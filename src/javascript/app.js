@@ -15,8 +15,10 @@ Ext.define("TSReleaseDefectChart", {
     config: {
         defaultSettings: {
             closedStateValues: ['Closed'],
-            groupField: 'Severity'
+            groupField: 'Severity',
+            colorMappingByGroup: {}
         }
+    
     },
     
     integrationHeaders : {
@@ -27,11 +29,13 @@ Ext.define("TSReleaseDefectChart", {
         console.log('--', this.getSettings());
         
         this.group_field = this.getSetting('groupField') || 'Severity';
-        this.colors = this.getSetting('colorMapping') || {};
+        this.colors_by_field = this.getSetting('colorMappingByGroup') || {};
 
-        if ( Ext.isString(this.colors) ) {
-            this.colors = Ext.JSON.decode(this.colors);
+        if ( Ext.isString(this.colors_by_field) ) {
+            this.colors_by_field = Ext.JSON.decode(this.colors_by_field);
         }
+        
+        this.colors = this.colors_by_field[this.group_field] || {};
         
         TSUtilities.getAllowedValues('Defect',this.group_field).then({
             scope: this,
@@ -340,7 +344,7 @@ Ext.define("TSReleaseDefectChart", {
                 }
             }
         },{
-            name: 'colorMapping',
+            name: 'colorMappingByGroup',
             readyEvent: 'ready',
             fieldLabel: 'Colors by Field Value',
             width: this.getWidth() -10,
