@@ -3,13 +3,13 @@
 <head>
     <title>Release Defect Chart</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Fri Oct 07 2016 15:19:15 GMT-0700 (PDT) -->
+    <!--  Build Date: Mon Oct 24 2016 10:52:24 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Fri Oct 07 2016 15:19:15 GMT-0700 (PDT)";
+        var APP_BUILD_DATE = "Mon Oct 24 2016 10:52:24 GMT-0700 (PDT)";
         var STORY    = "US427";
         var BUILDER  = "jmartin";
-        var CHECKSUM = 119753096202;
+        var CHECKSUM = 120285588850;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -633,8 +633,6 @@ Ext.define('CA.techservices.calculator.DefectCalculator', {
 
         this.snapshots = snapshots;
         
-        console.log('snapshots', snapshots);
-        
         var chart_data = this._transformLumenizeDataToHighchartsSeries(calculator, seriesConfig);
                 
         var updated_chart_data = this._addColors(chart_data);
@@ -748,7 +746,7 @@ Ext.define('CA.techservices.calculator.DefectCalculator', {
         if ( this.granularity == 'quarter' ) {
             today_string = this._getQuarterStringFor(today);
         }
-        console.log("Today:", today_string);
+
         var full_categories = Ext.Array.filter(chart_data.categories, function(category){
             return ( category <= today_string );
         });
@@ -1324,6 +1322,8 @@ Ext.define('CA.techservices.picker.FieldValuePicker', {
         if (this.alwaysExpanded && !Ext.isDefined(this.config.hideTrigger)) {
             this.hideTrigger = true;
         }
+        
+        this.selectedRawValues = [];
 
         this.callParent([this.config]);
     },
@@ -1372,6 +1372,7 @@ Ext.define('CA.techservices.picker.FieldValuePicker', {
 
         );
 
+        
         this.callParent(arguments);
     },
 
@@ -1390,21 +1391,22 @@ Ext.define('CA.techservices.picker.FieldValuePicker', {
      */
     setValue: function (values) {
         var items = Ext.isString(values) ? values.split(',') : Ext.Array.from(values);
-
+        
         items = Ext.Array.merge(items, this.alwaysSelectedValues);
 
         if (!Ext.isEmpty(items) && this.store && this.store.isLoading()) {
+
             this.store.on('load', function() {
                 this._selectValues(items);
             }, this, {single: true});
-        }
-        else {
+        } else {
             this._selectValues(items);
         }
     },
 
     _selectValues: function (items) {
         var oldValue = this.selectedValues.getRange();
+
         this.selectedValues.clear();
 
         _.each(items, function (item) {
@@ -1415,6 +1417,8 @@ Ext.define('CA.techservices.picker.FieldValuePicker', {
                 this.selectedValues.add(this._getKey(record), record);
             } else if (item.isModel) {
                 this.selectedValues.add(value, item);
+            } else {
+                this.selectedRawValues.push(value);
             }
         }, this);
 
@@ -1437,12 +1441,18 @@ Ext.define('CA.techservices.picker.FieldValuePicker', {
     },
 
     getSubmitValue: function(){
+        console.log('getSubmitValue',this.__loaded);
+
+        // sometimes the settings panel will cause the values not to load
+        if ( !this.__loaded ) { return this.selectedRawValues; }
+
         var submitValue = [];
         this.selectedValues.eachKey(function (key, value) {
             if (value.get(this.selectionKey)) {
                 submitValue.push(value.get(this.selectionKey));
             }
         }, this);
+        
         return submitValue;
     },
 
@@ -1596,6 +1606,7 @@ Ext.define('CA.techservices.picker.FieldValuePicker', {
      * Refreshes the view without loading the store.
      */
     refreshView: function () {
+        
         this._initFiltering();
         this._groupRecords(this._getRecordValue());
 
@@ -1818,6 +1829,7 @@ Ext.define('CA.techservices.picker.FieldValuePicker', {
      */
     _getRecordValue: function () {
         var recordArray = [];
+
         this.selectedValues.eachKey(function (key, value) {
             var record = this.findInStore(value.get(this.selectionKey));
             if (record) {
@@ -2494,7 +2506,7 @@ Ext.define("TSReleaseDefectChart", {
     
     _fieldIsNotHidden: function(field) {
         if ( field.hidden ) { return false; }
-        //console.log( field.name, field);
+
         if ( field.attributeDefinition && field.attributeDefinition.Constrained ) {
             if ( field.attributeDefinition.SchemaType == "string" ) {
                 return true;
@@ -2513,8 +2525,7 @@ Ext.define("TSReleaseDefectChart", {
             field: 'State',
             margin: left_margin,
             fieldLabel: 'States to Consider Closed',
-            labelWidth: 150,
-            readyState: 'ready'
+            labelWidth: 150
         },{
             name: 'groupField',
             xtype: 'rallyfieldcombobox',
@@ -2523,10 +2534,10 @@ Ext.define("TSReleaseDefectChart", {
             margin: left_margin,
             fieldLabel: 'Group Field',
             labelWidth: 150,
-            bubbleEvents: ['fieldselected', 'fieldready'],
+            bubbleEvents: ['groupfieldselected'],
             listeners: {
                 change: function(cb) {
-                    this.fireEvent('fieldselected',cb.getValue());
+                    this.fireEvent('groupfieldselected',cb.getValue());
                 }
             }
         },{
@@ -2540,16 +2551,16 @@ Ext.define("TSReleaseDefectChart", {
             model: 'Defect',
             xtype: 'colorsettingsfield',
             handlesEvents: {
-                fieldselected: function(field) {
+                groupfieldselected: function(field) {
                     this.refreshWithNewField(field);
                 }
             },
-            listeners: {
-                ready: function() {
-                    this.fireEvent('colorsettingsready');
-                }
-            },
-            bubbleEvents: 'colorsettingsready'
+//            listeners: {
+//                ready: function() {
+//                    this.fireEvent('colorsettingsready');
+//                }
+//            },
+//            bubbleEvents: 'colorsettingsready'
         }];
     },
     

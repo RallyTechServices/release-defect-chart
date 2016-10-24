@@ -250,6 +250,8 @@ Ext.define('CA.techservices.picker.FieldValuePicker', {
         if (this.alwaysExpanded && !Ext.isDefined(this.config.hideTrigger)) {
             this.hideTrigger = true;
         }
+        
+        this.selectedRawValues = [];
 
         this.callParent([this.config]);
     },
@@ -298,6 +300,7 @@ Ext.define('CA.techservices.picker.FieldValuePicker', {
 
         );
 
+        
         this.callParent(arguments);
     },
 
@@ -316,21 +319,22 @@ Ext.define('CA.techservices.picker.FieldValuePicker', {
      */
     setValue: function (values) {
         var items = Ext.isString(values) ? values.split(',') : Ext.Array.from(values);
-
+        
         items = Ext.Array.merge(items, this.alwaysSelectedValues);
 
         if (!Ext.isEmpty(items) && this.store && this.store.isLoading()) {
+
             this.store.on('load', function() {
                 this._selectValues(items);
             }, this, {single: true});
-        }
-        else {
+        } else {
             this._selectValues(items);
         }
     },
 
     _selectValues: function (items) {
         var oldValue = this.selectedValues.getRange();
+
         this.selectedValues.clear();
 
         _.each(items, function (item) {
@@ -341,6 +345,8 @@ Ext.define('CA.techservices.picker.FieldValuePicker', {
                 this.selectedValues.add(this._getKey(record), record);
             } else if (item.isModel) {
                 this.selectedValues.add(value, item);
+            } else {
+                this.selectedRawValues.push(value);
             }
         }, this);
 
@@ -363,12 +369,18 @@ Ext.define('CA.techservices.picker.FieldValuePicker', {
     },
 
     getSubmitValue: function(){
+        console.log('getSubmitValue',this.__loaded);
+
+        // sometimes the settings panel will cause the values not to load
+        if ( !this.__loaded ) { return this.selectedRawValues; }
+
         var submitValue = [];
         this.selectedValues.eachKey(function (key, value) {
             if (value.get(this.selectionKey)) {
                 submitValue.push(value.get(this.selectionKey));
             }
         }, this);
+        
         return submitValue;
     },
 
@@ -522,6 +534,7 @@ Ext.define('CA.techservices.picker.FieldValuePicker', {
      * Refreshes the view without loading the store.
      */
     refreshView: function () {
+        
         this._initFiltering();
         this._groupRecords(this._getRecordValue());
 
@@ -744,6 +757,7 @@ Ext.define('CA.techservices.picker.FieldValuePicker', {
      */
     _getRecordValue: function () {
         var recordArray = [];
+
         this.selectedValues.eachKey(function (key, value) {
             var record = this.findInStore(value.get(this.selectionKey));
             if (record) {

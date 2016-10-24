@@ -132,8 +132,6 @@ Ext.define('CA.techservices.calculator.DefectCalculator', {
 
         this.snapshots = snapshots;
         
-        console.log('snapshots', snapshots);
-        
         var chart_data = this._transformLumenizeDataToHighchartsSeries(calculator, seriesConfig);
                 
         var updated_chart_data = this._addColors(chart_data);
@@ -247,7 +245,7 @@ Ext.define('CA.techservices.calculator.DefectCalculator', {
         if ( this.granularity == 'quarter' ) {
             today_string = this._getQuarterStringFor(today);
         }
-        console.log("Today:", today_string);
+
         var full_categories = Ext.Array.filter(chart_data.categories, function(category){
             return ( category <= today_string );
         });

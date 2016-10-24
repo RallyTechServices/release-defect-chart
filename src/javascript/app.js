@@ -308,7 +308,7 @@ Ext.define("TSReleaseDefectChart", {
     
     _fieldIsNotHidden: function(field) {
         if ( field.hidden ) { return false; }
-        //console.log( field.name, field);
+
         if ( field.attributeDefinition && field.attributeDefinition.Constrained ) {
             if ( field.attributeDefinition.SchemaType == "string" ) {
                 return true;
@@ -327,8 +327,7 @@ Ext.define("TSReleaseDefectChart", {
             field: 'State',
             margin: left_margin,
             fieldLabel: 'States to Consider Closed',
-            labelWidth: 150,
-            readyState: 'ready'
+            labelWidth: 150
         },{
             name: 'groupField',
             xtype: 'rallyfieldcombobox',
@@ -337,10 +336,10 @@ Ext.define("TSReleaseDefectChart", {
             margin: left_margin,
             fieldLabel: 'Group Field',
             labelWidth: 150,
-            bubbleEvents: ['fieldselected', 'fieldready'],
+            bubbleEvents: ['groupfieldselected'],
             listeners: {
                 change: function(cb) {
-                    this.fireEvent('fieldselected',cb.getValue());
+                    this.fireEvent('groupfieldselected',cb.getValue());
                 }
             }
         },{
@@ -354,16 +353,16 @@ Ext.define("TSReleaseDefectChart", {
             model: 'Defect',
             xtype: 'colorsettingsfield',
             handlesEvents: {
-                fieldselected: function(field) {
+                groupfieldselected: function(field) {
                     this.refreshWithNewField(field);
                 }
             },
-            listeners: {
-                ready: function() {
-                    this.fireEvent('colorsettingsready');
-                }
-            },
-            bubbleEvents: 'colorsettingsready'
+//            listeners: {
+//                ready: function() {
+//                    this.fireEvent('colorsettingsready');
+//                }
+//            },
+//            bubbleEvents: 'colorsettingsready'
         }];
     },
     
